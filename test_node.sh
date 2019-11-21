@@ -1,27 +1,19 @@
 #!/bin/sh
-py='/home/tops/bin/python'
-cluster='10.101.83.226:4181,10.101.83.239:4181,10.101.83.237:4181'
-file=node.dat
-step=10000
+py='/usr/bin/python'
+cluster='10.82.158.15:2181,10.82.158.16:2181,10.82.158.17:2181'
 root='/zk_node_test'
+file=node.dat
+size=25
+step=10000
+round=10
 
-rm -rf $file
+> $file
 
-for((i=1; i <= 10; ++i))
-do
-    echo $(($i*$step)) >> $file
-done
-
-for((i=1; i <= 10; ++i))
+for((i=1; i <= $round; ++i))
 do
     n=$(($i*$step))
-    $py zk-latencies.py --cluster="$cluster"  --root_znode="$root" --znode_count=$n > result.tmp
-    op_set=`cat result.tmp | grep 'set' | awk '{print $9}' | awk -F '.' '{print $1}'`
-    op_get=`cat result.tmp | grep 'get' | awk '{print $9}' | awk -F '.' '{print $1}'`
-    echo $op_set, $op_get
-    sed -i "${i}s/$/\t&${op_set}/g" $file
-    sed -i "${i}s/$/\t&${op_get}/g" $file
+    $py zk-latencies.py --cluster="$cluster" --root_znode="$root" --znode_size=$size --znode_count=$n | tee result.tmp
+    cat result.tmp | egrep -o "[0-9]+\.[0-9]+/sec" | awk -v num=$n -F'/' 'BEGIN{printf("|%i|",num)}{printf("%i|",$1)}END{printf"\n"}' >>$file
 done
 
-rm -rf cli_log*
-
+rm -f cli_log*

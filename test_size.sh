@@ -1,36 +1,19 @@
 #!/bin/sh
-py='/home/tops/bin/python'
-cluster='10.101.83.226:4181,10.101.83.239:4181,10.101.83.237:4181'
-file=node_size.dat
+py='/usr/bin/python'
+cluster='10.82.158.15:2181,10.82.158.16:2181,10.82.158.17:2181'
 root='/zk_size_test'
+file=size.dat
 count=10000
+step=10240
+round=10
 
-rm -rf $file
+> $file
 
-for((i=1; i <= 7; ++i))
+for((i=1; i <= $round; ++i))
 do
-    echo "$(($i*10))" >> $file
+    n=$(($i*$step))
+    $py zk-latencies.py --cluster="$cluster" --root_znode="$root" --znode_count=$count --znode_size=$n | tee result.tmp
+    cat result.tmp | egrep -o "[0-9]+\.[0-9]+/sec" | awk -v num=$n -F'/' 'BEGIN{printf("|%i|",num)}{printf("%i|",$1)}END{printf"\n"}' >>$file
 done
 
-test()
-{
-    size=$1
-    $py zk-latencies.py --cluster="$cluster"  --root_znode="$root" --znode_count=$count \
-        --znode_size=$size --timeout=30000 > result.tmp
-    op_set=`cat result.tmp | grep 'set' | awk '{print $9}' | awk -F '.' '{print $1}'`
-    op_get=`cat result.tmp | grep 'get' | awk '{print $9}' | awk -F '.' '{print $1}'`
-    echo "size test $count $size" >> size.result
-    cat result.tmp >> size.result
-    echo $op_set, $op_get
-    sed -i "${i}s/$/\t&${op_set}/g" $file
-    sed -i "${i}s/$/\t&${op_get}/g" $file
-}
-
-for((i=1; i <= 7; ++i))
-do
-    n=$(($i*1024*10))
-    test $n
-done
-
-rm -rf cli_log*
-
+rm -f cli_log*
