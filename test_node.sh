@@ -12,8 +12,8 @@ round=20
 for((i=1; i <= $round; ++i))
 do
     n=$(($i*$step))
-    $py zk-latencies.py --cluster="$cluster" --root_znode="$root" --timeout=120000 --znode_size=$size --znode_count=$n | tee result.tmp
-    cat result.tmp | egrep -o "[0-9]+\.[0-9]+/sec" | awk -v num=$n -F'/' 'BEGIN{printf("|%i|",num)}{printf("%i|",$1)}END{printf"\n"}' >>$file
+    $py zk-latencies.py --cluster="$cluster" --root_znode="$root" --timeout=120000 --znode_size=$size --znode_count=$n | tee "${file}.tmp"
+    cat "${file}.tmp" | egrep -o "[0-9]+\.[0-9]+/sec" | awk -v num=$n -F'/' 'BEGIN{printf("|%i|",num)}{printf("%i|",$1)}END{printf"\n"}' >>$file
 done
 
 rm -f cli_log*
